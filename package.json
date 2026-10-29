@@ -1,0 +1,306 @@
+{
+  "name": "treedeck",
+  "displayName": "TreeDeck: Git Worktree Manager",
+  "description": "Manage git worktrees in VS Code and Cursor: list, open, diff, create, remove and compare worktrees from one lightweight sidebar panel.",
+  "version": "0.1.0",
+  "publisher": "treedeck",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luthfidhani/treedeck.git"
+  },
+  "homepage": "https://github.com/luthfidhani/treedeck#readme",
+  "bugs": {
+    "url": "https://github.com/luthfidhani/treedeck/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "worktree",
+    "worktrees",
+    "git worktree",
+    "worktree manager",
+    "branches",
+    "multiple branches",
+    "diff",
+    "cursor",
+    "claude code",
+    "ai agents",
+    "parallel agents",
+    "scm",
+    "multi-root"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onView:treedeck.worktrees",
+    "workspaceContains:.git"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "treedeck",
+          "title": "TreeDeck",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "treedeck": [
+        {
+          "type": "webview",
+          "id": "treedeck.worktrees",
+          "name": "Worktrees"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "treedeck.refresh",
+        "title": "Refresh",
+        "category": "TreeDeck",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "treedeck.openWorktree",
+        "title": "Open Worktree",
+        "category": "TreeDeck",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "treedeck.openInNewWindow",
+        "title": "Open in New Window",
+        "category": "TreeDeck",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "treedeck.copyPath",
+        "title": "Copy Path",
+        "category": "TreeDeck"
+      },
+      {
+        "command": "treedeck.revealPath",
+        "title": "Reveal in File Explorer / OS",
+        "category": "TreeDeck"
+      },
+      {
+        "command": "treedeck.switchWorktree",
+        "title": "Switch Worktree…",
+        "category": "TreeDeck"
+      },
+      {
+        "command": "treedeck.openDiff",
+        "title": "Open Diff",
+        "category": "TreeDeck"
+      },
+      {
+        "command": "treedeck.createWorktree",
+        "title": "Create Worktree…",
+        "category": "TreeDeck",
+        "icon": "$(add)"
+      },
+      {
+        "command": "treedeck.removeWorktree",
+        "title": "Remove Worktree…",
+        "category": "TreeDeck",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "treedeck.pruneWorktrees",
+        "title": "Prune Stale Worktrees…",
+        "category": "TreeDeck"
+      },
+      {
+        "command": "treedeck.compareWithBase",
+        "title": "Compare with Base Branch",
+        "category": "TreeDeck",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "treedeck.compareWorktrees",
+        "title": "Compare Two Worktrees…",
+        "category": "TreeDeck",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "treedeck.filter",
+        "title": "Search Worktrees",
+        "category": "TreeDeck",
+        "icon": "$(search)"
+      },
+      {
+        "command": "treedeck.collapseAll",
+        "title": "Collapse All",
+        "category": "TreeDeck",
+        "icon": "$(collapse-all)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "treedeck.openDiff",
+          "when": "false"
+        },
+        {
+          "command": "treedeck.collapseAll",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "treedeck.createWorktree",
+          "when": "view == treedeck.worktrees",
+          "group": "navigation@1"
+        },
+        {
+          "command": "treedeck.refresh",
+          "when": "view == treedeck.worktrees",
+          "group": "navigation@2"
+        },
+        {
+          "command": "treedeck.collapseAll",
+          "when": "view == treedeck.worktrees",
+          "group": "navigation@3"
+        },
+        {
+          "command": "treedeck.compareWorktrees",
+          "when": "view == treedeck.worktrees",
+          "group": "2_compare@1"
+        },
+        {
+          "command": "treedeck.pruneWorktrees",
+          "when": "view == treedeck.worktrees",
+          "group": "3_manage@1"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "treedeck.openWorktree",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeCurrent && !worktreeMissing",
+          "group": "1_open@1"
+        },
+        {
+          "command": "treedeck.openInNewWindow",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeCurrent && !worktreeMissing",
+          "group": "1_open@2"
+        },
+        {
+          "command": "treedeck.copyPath",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree'",
+          "group": "2_path@1"
+        },
+        {
+          "command": "treedeck.revealPath",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeMissing",
+          "group": "2_path@2"
+        },
+        {
+          "command": "treedeck.compareWithBase",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeMissing",
+          "group": "3_compare@1"
+        },
+        {
+          "command": "treedeck.removeWorktree",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeMain && !worktreeCurrent",
+          "group": "9_manage@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "TreeDeck",
+      "properties": {
+        "treedeck.defaultOpenBehavior": {
+          "type": "string",
+          "enum": [
+            "sameWindow",
+            "newWindow"
+          ],
+          "default": "sameWindow",
+          "description": "What clicking a worktree does."
+        },
+        "treedeck.gitPath": {
+          "type": "string",
+          "default": "git",
+          "description": "Path to the git executable."
+        },
+        "treedeck.baseBranch": {
+          "type": "string",
+          "default": "",
+          "description": "Base branch for \"Compare with Base Branch\". Empty = auto-detect (main, master, then origin/HEAD)."
+        },
+        "treedeck.newWorktreePathPattern": {
+          "type": "string",
+          "default": "../{repo}-{branch}",
+          "markdownDescription": "Default folder for new worktrees, relative to the main checkout. Variables: `{repo}`, `{branch}` (slashes become `-`)."
+        },
+        "treedeck.agentWorktreeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/.cursor/worktrees/**"
+          ],
+          "description": "Worktree paths matching these globs are tagged as agent worktrees."
+        },
+        "treedeck.postCreate.copyFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Files/folders (relative to the main checkout) copied into each new worktree, e.g. `.env`. Missing ones are skipped."
+        },
+        "treedeck.postCreate.command": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Command run in a terminal inside each new worktree, e.g. `npm install`. Empty = none."
+        },
+        "treedeck.sortBy": {
+          "type": "string",
+          "enum": [
+            "currentFirst",
+            "name",
+            "recent"
+          ],
+          "default": "currentFirst",
+          "enumDescriptions": [
+            "Current worktree, then main checkout, then git's order",
+            "Main checkout, then alphabetical by branch",
+            "Most recently opened first"
+          ],
+          "description": "Worktree ordering."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc",
+    "lint": "tsc && eslint src test && prettier --check src test",
+    "format": "prettier --write src test",
+    "test": "vitest run",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.85.0",
+    "@vscode/codicons": "^0.0.46-24",
+    "@vscode/vsce": "^4.1.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  },
+  "icon": "media/icon.png"
+}

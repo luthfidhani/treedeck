@@ -1,0 +1,64 @@
+# Lint, test and package. Runs on pull requests, and is called by release.yml for every push to main.
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_call:
+    outputs:
+      version:
+        description: Extension version from package.json
+        value: ${{ jobs.test.outputs.version }}
+
+permissions:
+  contents: read
+
+concurrency:
+  # A new push to a PR cancels its previous run; runs on main are never cancelled.
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Lint, test, package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # npm ci installs exactly what package-lock.json pins (each package verified by its sha512 integrity hash).
+      # --ignore-scripts: no install-time scripts from dependencies run in CI.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Package .vsix
+        run: npm run package
+
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload .vsix
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: treedeck-vsix
+          path: '*.vsix'
+          if-no-files-found: error
+          retention-days: 14
