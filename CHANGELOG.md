@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-29
 
 - A Fetch button in the panel title runs `git fetch --all --prune`, so remote branches stay current. It is
   the only part of TreeDeck that uses the network, and only when pressed.

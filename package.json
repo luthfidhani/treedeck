@@ -2,7 +2,7 @@
   "name": "treedeck",
   "displayName": "TreeDeck: Git Worktree Manager",
   "description": "Manage git worktrees in VS Code and Cursor: list, open, diff, create, remove and compare worktrees from one lightweight sidebar panel.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "treedeck",
   "license": "MIT",
   "repository": {
