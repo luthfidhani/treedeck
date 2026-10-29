@@ -28,7 +28,7 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 4px 8px 6px 12px;
+  margin: 4px 8px 5px 12px;
   padding: 0 2px 0 6px;
   height: 26px;
   background: var(--vscode-input-background);
@@ -64,6 +64,7 @@ body {
 #list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* long branch names ellipsize instead of scrolling the panel sideways */
   outline: 0;
   padding-bottom: 8px;
 }
@@ -193,19 +194,6 @@ body {
   background: var(--vscode-badge-background);
   color: var(--vscode-badge-foreground);
 }
-.tag {
-  font-size: 10px;
-  line-height: 14px;
-  padding: 0 4px;
-  border-radius: 3px;
-  border: 1px solid var(--vscode-widget-border, var(--vscode-descriptionForeground));
-  color: var(--vscode-descriptionForeground);
-  text-transform: lowercase;
-}
-.tag.current {
-  border-color: var(--vscode-charts-green);
-  color: var(--vscode-charts-green);
-}
 .sync {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
@@ -235,12 +223,24 @@ body {
   font-size: 11px;
   font-weight: 600;
 }
-.s-M { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
-.s-A { color: var(--vscode-gitDecoration-addedResourceForeground); }
-.s-D { color: var(--vscode-gitDecoration-deletedResourceForeground); }
-.s-R { color: var(--vscode-gitDecoration-renamedResourceForeground); }
-.s-U { color: var(--vscode-gitDecoration-untrackedResourceForeground); }
-.s-C { color: var(--vscode-gitDecoration-conflictingResourceForeground); }
+.s-M {
+  color: var(--vscode-gitDecoration-modifiedResourceForeground);
+}
+.s-A {
+  color: var(--vscode-gitDecoration-addedResourceForeground);
+}
+.s-D {
+  color: var(--vscode-gitDecoration-deletedResourceForeground);
+}
+.s-R {
+  color: var(--vscode-gitDecoration-renamedResourceForeground);
+}
+.s-U {
+  color: var(--vscode-gitDecoration-untrackedResourceForeground);
+}
+.s-C {
+  color: var(--vscode-gitDecoration-conflictingResourceForeground);
+}
 .file.s-D .label {
   text-decoration: line-through;
 }
@@ -280,4 +280,110 @@ mark {
 .meta .codicon-loading {
   font-size: 13px;
   opacity: 0.5;
+}
+
+/* ---- branches group ---- */
+.group .label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.branch.current .kind {
+  color: var(--vscode-charts-green);
+}
+.branch.current .label {
+  font-weight: 600;
+}
+
+/* ---- tabs: worktrees (folders on disk) vs branches (refs) ---- */
+.tabs {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px 0 12px;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--vscode-foreground);
+  opacity: 0.65;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  opacity: 0.9;
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.tab.active {
+  opacity: 1;
+  font-weight: 600;
+  border-bottom-color: var(--vscode-focusBorder);
+}
+.tab .codicon {
+  font-size: 14px;
+}
+.tab .count {
+  min-width: 16px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+.tab .count:empty {
+  display: none;
+}
+
+/* worktree folder shown on a branch row */
+.desc .codicon.inline {
+  font-size: 12px;
+  margin-right: 3px;
+  vertical-align: -1px;
+  opacity: 0.8;
+}
+.when {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+  min-width: 22px;
+  text-align: right;
+}
+
+/* ---- who last committed ---- */
+.user {
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* a branch held by another worktree */
+.kind.held {
+  opacity: 0.55;
+}
+
+/* ---- commits ---- */
+.commit .label {
+  flex: 1 1 auto;
+}
+.desc.sha {
+  flex: none;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
 }

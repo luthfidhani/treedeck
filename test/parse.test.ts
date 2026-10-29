@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   globToRegExp,
+  nameStatusLetter,
+  parseBranchRefs,
   parseGitVersion,
   parseNameStatus,
   parseStatusPorcelainZ,
@@ -120,5 +122,91 @@ describe('parseGitVersion', () => {
   it('parses Apple git', () => {
     expect(parseGitVersion('git version 2.39.3 (Apple Git-146)')).toEqual([2, 39]);
     expect(parseGitVersion('nope')).toBeUndefined();
+  });
+});
+
+describe('parseBranchRefs', () => {
+  it('parses tracking info, gone upstreams, authors and branches without one', () => {
+    const ada = ['Ada Lovelace', '<ada@example.com>'];
+    const out = [
+      `main\taaa111\torigin/main\t\t1730000000 +0700\t${ada[0]}\t${ada[1]}`,
+      'feature/x\tbbb222\torigin/feature/x\t[ahead 2, behind 1]\t1730001000 +0700\tGrace Hopper\t<g@h.dev>',
+      `old\tccc333\torigin/old\t[gone]\t1729000000 +0000\t${ada[0]}\t${ada[1]}`,
+      'local-only\tddd444\t\t\t1728000000 +0000\t\t',
+      '',
+    ].join('\n');
+    expect(parseBranchRefs(out)).toEqual([
+      {
+        name: 'main',
+        head: 'aaa111',
+        upstream: 'origin/main',
+        ahead: 0,
+        behind: 0,
+        gone: false,
+        date: 1730000000,
+        author: 'Ada Lovelace',
+        authorEmail: '<ada@example.com>',
+        remote: false,
+      },
+      {
+        name: 'feature/x',
+        head: 'bbb222',
+        upstream: 'origin/feature/x',
+        ahead: 2,
+        behind: 1,
+        gone: false,
+        date: 1730001000,
+        author: 'Grace Hopper',
+        authorEmail: '<g@h.dev>',
+        remote: false,
+      },
+      {
+        name: 'old',
+        head: 'ccc333',
+        upstream: 'origin/old',
+        ahead: 0,
+        behind: 0,
+        gone: true,
+        date: 1729000000,
+        author: 'Ada Lovelace',
+        authorEmail: '<ada@example.com>',
+        remote: false,
+      },
+      {
+        name: 'local-only',
+        head: 'ddd444',
+        upstream: undefined,
+        ahead: 0,
+        behind: 0,
+        gone: false,
+        date: 1728000000,
+        author: '',
+        authorEmail: '',
+        remote: false,
+      },
+    ]);
+  });
+
+  it('parses [ahead n] on its own and returns [] for empty output', () => {
+    expect(parseBranchRefs('solo\tabc\torigin/solo\t[ahead 3]\t1 +0000\tAda\t<a@b.c>')[0]).toMatchObject({
+      ahead: 3,
+      behind: 0,
+      author: 'Ada',
+    });
+    expect(parseBranchRefs('')).toEqual([]);
+  });
+});
+
+describe('nameStatusLetter', () => {
+  it('maps diff letters to panel status letters', () => {
+    expect(['A', 'D', 'R', 'C', 'M', 'T', 'U'].map(nameStatusLetter)).toEqual([
+      'A',
+      'D',
+      'R',
+      'R',
+      'M',
+      'M',
+      '!',
+    ]);
   });
 });

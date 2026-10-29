@@ -4,7 +4,13 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { parseNameStatus, parseStatusPorcelainZ, parseWorktreeList, statusLetter } from '../src/git/parse';
+import {
+  parseBranchRefs,
+  parseNameStatus,
+  parseStatusPorcelainZ,
+  parseWorktreeList,
+  statusLetter,
+} from '../src/git/parse';
 
 const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'treedeck-')));
 const main = path.join(tmp, 'main repo');
@@ -67,5 +73,18 @@ describe('real git', () => {
       { status: 'M', path: 'a.txt' },
       { status: 'R', origPath: 'old name.txt', path: 'new näme.txt' },
     ]);
+  });
+
+  it('parses for-each-ref branch output from this git version', () => {
+    const format =
+      '%(refname:short)\t%(objectname)\t%(upstream:short)\t%(upstream:track)\t%(committerdate:raw)';
+    const refs = parseBranchRefs(git(main, 'for-each-ref', `--format=${format}`, 'refs/heads'));
+    // main plus the branches created by the worktree test above.
+    expect(refs.map((r) => r.name).sort()).toEqual(['feature/x', 'gone', 'main']);
+    const m = refs.find((r) => r.name === 'main')!;
+    expect(m.head).toMatch(/^[0-9a-f]{40}$/);
+    expect(m.date).toBeGreaterThan(1_600_000_000); // a real unix timestamp, not NaN
+    expect(m.upstream).toBeUndefined(); // no remote in this fixture
+    expect([m.ahead, m.behind, m.gone]).toEqual([0, 0, false]);
   });
 });

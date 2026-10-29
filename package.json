@@ -139,6 +139,18 @@
         "title": "Collapse All",
         "category": "TreeDeck",
         "icon": "$(collapse-all)"
+      },
+      {
+        "command": "treedeck.checkoutBranch",
+        "title": "Checkout Branch",
+        "category": "TreeDeck",
+        "icon": "$(check)"
+      },
+      {
+        "command": "treedeck.fetch",
+        "title": "Fetch",
+        "category": "TreeDeck",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -150,6 +162,10 @@
         {
           "command": "treedeck.collapseAll",
           "when": "false"
+        },
+        {
+          "command": "treedeck.checkoutBranch",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -159,14 +175,19 @@
           "group": "navigation@1"
         },
         {
-          "command": "treedeck.refresh",
+          "command": "treedeck.fetch",
           "when": "view == treedeck.worktrees",
           "group": "navigation@2"
         },
         {
-          "command": "treedeck.collapseAll",
+          "command": "treedeck.refresh",
           "when": "view == treedeck.worktrees",
           "group": "navigation@3"
+        },
+        {
+          "command": "treedeck.collapseAll",
+          "when": "view == treedeck.worktrees",
+          "group": "navigation@4"
         },
         {
           "command": "treedeck.compareWorktrees",
@@ -209,6 +230,11 @@
           "command": "treedeck.removeWorktree",
           "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'worktree' && !worktreeMain && !worktreeCurrent",
           "group": "9_manage@1"
+        },
+        {
+          "command": "treedeck.checkoutBranch",
+          "when": "webviewId == 'treedeck.worktrees' && webviewSection == 'branch' && !branchCurrent",
+          "group": "1_branch@1"
         }
       ]
     },

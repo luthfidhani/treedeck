@@ -130,3 +130,87 @@ export function parseGitVersion(out: string): [number, number] | undefined {
   const m = /(\d+)\.(\d+)/.exec(out);
   return m ? [Number(m[1]), Number(m[2])] : undefined;
 }
+
+export interface BranchRef {
+  name: string;
+  head: string;
+  upstream?: string;
+  ahead: number;
+  behind: number;
+  /** An upstream is configured but no longer exists on the remote. */
+  gone: boolean;
+  /** Committer date, unix seconds; used for "most recent first". */
+  date: number;
+  /** Author of the branch's last commit. git records no "who created this branch". */
+  author: string;
+  authorEmail: string;
+  /** A remote-tracking branch (`origin/x`) with no local branch of its own. */
+  remote: boolean;
+}
+
+/**
+ * Parses `git for-each-ref` with BRANCH_FORMAT (tab separated; git forbids tabs in ref names).
+ * `%(upstream:track)` reads `[ahead 2, behind 1]`, `[gone]`, or is empty.
+ */
+export function parseBranchRefs(out: string): BranchRef[] {
+  const result: BranchRef[] = [];
+  for (const line of out.replace(/\r\n/g, '\n').split('\n')) {
+    if (!line.trim()) continue;
+    const [name, head, upstream, track, date, author, email] = line.split('\t');
+    if (!name) continue;
+    result.push({
+      name,
+      head: head ?? '',
+      upstream: upstream || undefined,
+      ahead: Number(/ahead (\d+)/.exec(track ?? '')?.[1] ?? 0),
+      behind: Number(/behind (\d+)/.exec(track ?? '')?.[1] ?? 0),
+      gone: (track ?? '').includes('[gone]'),
+      date: Number((date ?? '').trim().split(' ')[0]) || 0,
+      author: author ?? '',
+      authorEmail: email ?? '',
+      remote: false,
+    });
+  }
+  return result;
+}
+
+/** `git diff --name-status` letter → the same status letters the panel uses for working-tree changes. */
+export function nameStatusLetter(status: string): StatusLetter {
+  if (status === 'A') return 'A';
+  if (status === 'D') return 'D';
+  if (status === 'R' || status === 'C') return 'R';
+  if (status === 'U') return '!';
+  return 'M';
+}
+
+export interface Commit {
+  sha: string;
+  short: string;
+  author: string;
+  authorEmail: string;
+  /** Author date, unix seconds. */
+  date: number;
+  subject: string;
+}
+
+/**
+ * Parses `git log` written with COMMIT_FORMAT: five tab separated fields then the subject,
+ * one record per line. The subject keeps any tabs it contains, since it is taken as the rest.
+ */
+export function parseCommits(out: string): Commit[] {
+  const result: Commit[] = [];
+  for (const line of out.replace(/\r\n/g, '\n').split('\n')) {
+    if (!line.trim()) continue;
+    const f = line.split('\t');
+    if (f.length < 6) continue;
+    result.push({
+      sha: f[0],
+      short: f[1],
+      author: f[2],
+      authorEmail: f[3],
+      date: Number(f[4]) || 0,
+      subject: f.slice(5).join('\t'),
+    });
+  }
+  return result;
+}

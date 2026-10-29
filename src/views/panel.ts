@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
-import { openWorkingDiff } from '../diff/provider';
+import { openChanges, openRefDiff, openWorkingDiff } from '../diff/provider';
 import { wtLabel, type WorktreeModel } from './model';
 
 /** Commands the webview may trigger. Anything else it sends is ignored. */
@@ -10,6 +10,7 @@ const ALLOWED_COMMANDS = new Set([
   'treedeck.removeWorktree',
   'treedeck.createWorktree',
   'treedeck.compareWithBase',
+  'treedeck.checkoutBranch',
   'workbench.action.files.openFolder',
 ]);
 
@@ -18,7 +19,13 @@ type Msg =
   | { type: 'search'; q: string }
   | { type: 'expand'; key: string }
   | { type: 'diff'; key: string; file: string }
-  | { type: 'command'; command: string; worktreeKey?: string; repoKey?: string }
+  | { type: 'expandBranch'; repoKey: string; name: string }
+  | { type: 'expandCommits'; repoKey: string; name: string }
+  | { type: 'expandCommit'; repoKey: string; sha: string }
+  | { type: 'commitDiff'; repoKey: string; sha: string; file: string }
+  | { type: 'previewBranch'; repoKey: string; name: string }
+  | { type: 'previewCommit'; repoKey: string; sha: string; subject: string }
+  | { type: 'command'; command: string; worktreeKey?: string; repoKey?: string; branchName?: string }
   | { type: 'gitSettings' };
 
 /**
@@ -89,9 +96,35 @@ export class WorktreePanel implements vscode.WebviewViewProvider {
           if (n && change) await openWorkingDiff(n.wt.path, n.wt.head ?? 'HEAD', change, wtLabel(n.wt));
           return;
         }
+        case 'expandBranch':
+          return void (await this.model.expandBranch(m.repoKey, m.name));
+        case 'expandCommits':
+          return void (await this.model.expandCommits(m.repoKey, m.name));
+        case 'expandCommit':
+          return void (await this.model.expandCommit(m.repoKey, m.sha));
+        case 'previewBranch': {
+          const c = await this.model.branchChanges(m.repoKey, m.name);
+          if (c) await openChanges(`${m.name} (vs ${c.base})`, c.cwd, c.mergeBase, m.name, c.files);
+          return;
+        }
+        case 'previewCommit': {
+          const c = await this.model.commitChanges(m.repoKey, m.sha);
+          if (c) await openChanges(`${c.short} ${m.subject}`, c.cwd, `${m.sha}^`, m.sha, c.files);
+          return;
+        }
+        case 'commitDiff': {
+          const t = this.model.commitDiffTarget(m.repoKey, m.sha, m.file);
+          // A commit is shown against its first parent, the way `git show` does it.
+          if (t) await openRefDiff(t.cwd, `${m.sha}^`, m.sha, t.entry, `${t.short} ${t.entry.path}`);
+          return;
+        }
         case 'command':
           if (!ALLOWED_COMMANDS.has(m.command)) return;
-          await vscode.commands.executeCommand(m.command, { worktreeKey: m.worktreeKey, repoKey: m.repoKey });
+          await vscode.commands.executeCommand(m.command, {
+            worktreeKey: m.worktreeKey,
+            repoKey: m.repoKey,
+            branchName: m.branchName,
+          });
           return;
       }
     } catch (e) {
@@ -115,9 +148,19 @@ export class WorktreePanel implements vscode.WebviewViewProvider {
 <link rel="stylesheet" href="${uri('dist', 'codicon.css')}">
 <link rel="stylesheet" href="${uri('media', 'panel.css')}">
 </head><body>
+<div class="tabs" role="tablist">
+  <button class="tab active" id="tab-worktrees" role="tab" aria-selected="true" data-tab="worktrees"
+    title="Worktrees: the folders of this repository that are checked out on disk">
+    <span class="codicon codicon-folder-library"></span><span>Worktrees</span><span class="count" id="count-worktrees"></span>
+  </button>
+  <button class="tab" id="tab-commits" role="tab" aria-selected="false" data-tab="commits"
+    title="Branches: every local branch plus the ones that exist only on the remote, each expandable to the commits it added on top of the base branch">
+    <span class="codicon codicon-git-branch"></span><span>Branches</span><span class="count" id="count-commits"></span>
+  </button>
+</div>
 <div class="search">
   <span class="codicon codicon-search"></span>
-  <input id="q" type="text" placeholder="Search branch, path or file" aria-label="Search worktrees" spellcheck="false">
+  <input id="q" type="text" aria-label="Search" spellcheck="false">
   <button id="clear" class="icon-btn codicon codicon-close" title="Clear (Esc)" aria-label="Clear search"></button>
 </div>
 <div id="list" role="tree" aria-label="Worktrees"></div>

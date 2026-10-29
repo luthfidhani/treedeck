@@ -13,13 +13,25 @@ is half done, or running **parallel AI coding agents** (Cursor agents, Claude Co
 own worktree.
 
 - Every worktree at a glance: branch, path, number of changed files, ahead/behind upstream.
+- A branch list with per-branch changed files, and one-click checkout.
 - Click a changed file to open a HEAD ↔ working tree diff for that worktree.
 - Live search across branch names, paths and changed file names.
 - No runtime dependencies. It runs the `git` on your PATH.
-- No telemetry and no network calls.
+- No telemetry. The one thing that touches the network is the **Fetch** button, when you press it.
 - Works in VS Code 1.85+, Cursor, and other VS Code-based editors.
 
-<p align="center"><img src="docs/screenshot.png" alt="TreeDeck git worktree manager panel in Cursor: search box, list of git worktrees with changed-file counts, one worktree expanded to show its modified files" width="560"></p>
+<table>
+<tr>
+<td width="50%"><img src="docs/worktrees.png" alt="TreeDeck Worktrees tab: every git worktree of the repository with its folder and changed-file count, one expanded to show its modified files"></td>
+<td width="50%"><img src="docs/branches.png" alt="TreeDeck Branches tab: local and remote-only branches with who last committed and how long ago, one expanded to show its commits"></td>
+</tr>
+<tr>
+<td align="center"><b>Worktrees</b> — folders, changed files, diffs</td>
+<td align="center"><b>Branches</b> — local and remote branches, their commits</td>
+</tr>
+</table>
+
+<sub>Branch, path, file and author names are blurred in these screenshots; they come from a real repository.</sub>
 
 ## Install
 
@@ -30,10 +42,10 @@ own worktree.
 
 ## Features
 
-**Worktrees panel.** Each worktree shows its branch (or short SHA when detached, or `(bare)`), a short path,
-the number of changed files, and ahead/behind counts against its upstream. The worktree open in this
-window is tagged `current`. Icons tell apart the main checkout, linked worktrees, detached, locked,
-prunable (folder missing) and agent worktrees. Hover a worktree for its full path, branch, HEAD and lock reason.
+**Worktrees tab.** Each worktree shows its branch (or short SHA when detached, or `(bare)`), a short path,
+the number of changed files, and ahead/behind counts against its upstream. A green home icon marks the one
+open in this window, and the other icons tell apart linked, locked, missing and agent worktrees. Hover a
+worktree for its full path, branch, HEAD and lock reason.
 
 **Open.** Hover a worktree for its buttons: open in this window, open in a new window, compare with base,
 and remove. Right-click for Copy Path and Reveal in File Explorer.
@@ -57,10 +69,36 @@ files are handled.
   (`git diff base...HEAD`). Pick a file to open its diff; the list stays open so you can step through files.
 - **Compare Two Worktrees** (view `…` menu): files that differ between two worktrees' HEADs.
 
+**Two tabs.** The panel has a **Worktrees** tab (folders on disk) and a **Branches** tab (branches and the
+commits on them), so the two never mix. Each tab shows its own count, and the search box applies to the tab
+you're on.
+
+**Branches tab.** Every local branch, plus the branches that exist only on the remote (the branch behind
+someone's pull request, say), each with the commits it added on top of the base branch (newest first,
+up to 50) — the commits a pull request for it would list. Hovering a row gives you its buttons:
+
+- On a branch: **preview** opens every change the branch makes, as one multi-file diff against the base
+  branch, and the second button either **switches** this worktree to the branch (`git checkout`) or **opens
+  the worktree** that already holds it.
+- On a commit: **preview** opens everything that commit changed, compared with its parent.
+
+Expanding a branch lists its commits, and expanding a commit lists its files; clicking a file opens that one
+diff.
+
+**Fetch.** The cloud button in the panel title runs `git fetch --all --prune`, so the remote branches and
+the "its remote branch is gone" state match the remote again. Nothing else in TreeDeck uses the network, and
+it never fetches on its own.
+
+**Row icons say what a row is**, and hovering one explains it: a green ✓ for the branch open in this window,
+a cloud for a branch that exists only on the remote, a dimmed branch icon for one another worktree holds, and
+home, folder, robot, lock and warning icons for the kinds of worktree. Remote branches are as fresh as your
+last fetch, so press **Fetch** when you expect a new one.
+
 **Status bar.** Shows `repo · branch`. Click it to switch worktree through a fuzzy QuickPick.
 
-**Search and sort.** The search box at the top of the panel filters live by branch, path or changed file
-name. Arrow keys move through the list. Ordering comes from the `treedeck.sortBy` setting.
+**Search and sort.** The search box filters the current tab live, by worktree branch, path and changed file
+name, or by branch name. When the matches are in the other tab, the empty state offers to switch. Arrow keys
+move through the list. Ordering comes from the `treedeck.sortBy` setting.
 
 **Multi-root.** Each repo gets its own group. Several folders from the same repo are merged into one group.
 
@@ -91,7 +129,8 @@ to `treedeck.agentWorktreeGlobs`.
 ### How is TreeDeck different from GitLens?
 
 GitLens is a large extension that covers many git features, worktrees among them. TreeDeck does only
-worktrees. It has no dependencies, no account and no telemetry, and the extension is about 100 KB.
+worktrees and branches. It has no dependencies, no account and no telemetry, and the extension is about
+110 KB.
 
 ### How do I clean up stale or deleted worktrees?
 

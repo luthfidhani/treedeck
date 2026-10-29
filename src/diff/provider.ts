@@ -71,3 +71,26 @@ export async function openRefDiff(
     preserveFocus: true,
   });
 }
+
+/**
+ * Opens VS Code's multi-file "Changes" editor for a whole set of files — the quick way to read
+ * everything a branch or a commit did, instead of opening one diff at a time.
+ */
+export async function openChanges(
+  title: string,
+  cwd: string,
+  leftRef: string,
+  rightRef: string,
+  files: NameStatus[],
+): Promise<void> {
+  if (!files.length) {
+    void vscode.window.showInformationMessage(`TreeDeck: no changes in ${title}.`);
+    return;
+  }
+  const resources = files.map((f) => [
+    vscode.Uri.file(path.join(cwd, f.path)), // labels the entry in the list
+    baseUri(cwd, f.status === 'A' ? '' : leftRef, f.origPath ?? f.path),
+    baseUri(cwd, f.status === 'D' ? '' : rightRef, f.path),
+  ]);
+  await vscode.commands.executeCommand('vscode.changes', title, resources);
+}

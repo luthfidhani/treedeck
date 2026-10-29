@@ -6,10 +6,11 @@ const DEBOUNCE_MS = 300;
 
 /**
  * Files inside the common git dir that change when worktrees are added/removed/locked or any HEAD moves.
- * `logs/HEAD` (reflog) catches commits, which update refs/heads/* but not the HEAD file itself.
+ * `refs/heads/**` and `packed-refs` catch branches being created, deleted or moved by a commit or fetch.
  * `index` is deliberately excluded: other tools refresh it constantly, which would cause refresh storms.
  */
-const GIT_DIR_GLOB = '{HEAD,logs/HEAD,worktrees/*,worktrees/*/HEAD,worktrees/*/logs/HEAD,worktrees/*/locked}';
+const GIT_DIR_GLOB =
+  '{HEAD,logs/HEAD,packed-refs,refs/heads/**,worktrees/*,worktrees/*/HEAD,worktrees/*/logs/HEAD,worktrees/*/locked}';
 
 export function watchRepos(tree: WorktreeModel): vscode.Disposable {
   let timer: NodeJS.Timeout | undefined;

@@ -1,6 +1,17 @@
 import * as path from 'path';
 import { normPath } from '../util';
-import { parseStatusPorcelainZ, parseWorktreeList, type FileChange, type Worktree } from './parse';
+import {
+  parseBranchRefs,
+  parseCommits,
+  parseNameStatus,
+  parseStatusPorcelainZ,
+  parseWorktreeList,
+  type BranchRef,
+  type Commit,
+  type FileChange,
+  type NameStatus,
+  type Worktree,
+} from './parse';
 import { git, GitError } from './run';
 
 export interface Repo {
@@ -109,4 +120,104 @@ export async function aheadBehind(worktreePath: string): Promise<[number, number
   } catch {
     return undefined;
   }
+}
+
+// Tab separated: git forbids tabs (and spaces) in ref names, so this can't be ambiguous.
+const BRANCH_FORMAT =
+  '%(refname:short)\t%(objectname)\t%(upstream:short)\t%(upstream:track)\t%(committerdate:raw)' +
+  '\t%(authorname)\t%(authoremail:trim)';
+
+export async function listLocalBranches(cwd: string): Promise<BranchRef[]> {
+  return parseBranchRefs(await git(['for-each-ref', `--format=${BRANCH_FORMAT}`, 'refs/heads'], cwd, 30_000));
+}
+
+/**
+ * Remote-tracking branches (`origin/x`). A branch someone else pushed — the branch behind a pull
+ * request, say — exists only here until you check it out, so the list would miss it otherwise.
+ * These are only as fresh as the last `git fetch`; TreeDeck never fetches by itself.
+ */
+export async function listRemoteBranches(cwd: string): Promise<BranchRef[]> {
+  const refs = parseBranchRefs(
+    await git(['for-each-ref', `--format=${BRANCH_FORMAT}`, 'refs/remotes'], cwd, 30_000),
+  );
+  // `origin/HEAD` is an alias for the default branch, not a branch of its own.
+  return refs.filter((r) => !r.name.endsWith('/HEAD')).map((r) => ({ ...r, remote: true }));
+}
+
+/** `origin/feature/x` → `feature/x`. */
+export const withoutRemote = (name: string): string => name.slice(name.indexOf('/') + 1);
+
+/** Files changed on `branch` since it forked from `base` — three-dot, the same set a PR shows. */
+export async function branchDiff(
+  cwd: string,
+  base: string,
+  branch: string,
+): Promise<{ mergeBase: string; files: NameStatus[] }> {
+  const mergeBase = (await git(['merge-base', base, branch], cwd)).trim();
+  const files = parseNameStatus(
+    await git(['diff', '--name-status', '-z', '-M', `${base}...${branch}`], cwd, 60_000),
+  );
+  return { mergeBase, files };
+}
+
+/** Upstream of a branch (`origin/main`), or undefined when it has none. */
+export function upstreamOf(cwd: string, branch: string): Promise<string | undefined> {
+  return git(['rev-parse', '--abbrev-ref', '--symbolic-full-name', `${branch}@{upstream}`], cwd).then(
+    (s) => s.trim() || undefined,
+    () => undefined,
+  );
+}
+
+export function checkoutBranch(cwd: string, branch: string): Promise<string> {
+  return git(['checkout', branch], cwd, 120_000);
+}
+
+/** Creates a local branch that tracks `origin/x` and checks it out. */
+export function checkoutRemoteBranch(cwd: string, remoteRef: string): Promise<string> {
+  return git(['checkout', '-b', withoutRemote(remoteRef), '--track', remoteRef], cwd, 120_000);
+}
+
+/**
+ * Local branches whose tip is already reachable from `base`, i.e. merged the ordinary way.
+ * One call for the whole repo. A squash- or rebase-merge rewrites commits, so it isn't listed here;
+ * that case usually shows up as a deleted upstream ("gone") instead.
+ */
+export async function listMergedBranches(cwd: string, base: string): Promise<string[]> {
+  const out = await git(
+    ['for-each-ref', '--merged', base, '--format=%(refname:short)', 'refs/heads', 'refs/remotes'],
+    cwd,
+    30_000,
+  );
+  return out
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const COMMIT_FORMAT = '%H%x09%h%x09%an%x09%ae%x09%at%x09%s';
+
+/** Commits in `range` (e.g. `main..feature`, or just a branch name), newest first. */
+export async function listCommits(cwd: string, range: string, limit = 50): Promise<Commit[]> {
+  const out = await git(['log', `--max-count=${limit}`, `--format=${COMMIT_FORMAT}`, range], cwd, 60_000);
+  return parseCommits(out);
+}
+
+/** Files a single commit touched, compared with its first parent. */
+export async function commitFiles(cwd: string, sha: string): Promise<NameStatus[]> {
+  // --format= silences the commit header; -m --first-parent gives a merge commit a file list too.
+  const out = await git(
+    ['show', '--name-status', '-z', '-M', '--format=', '-m', '--first-parent', sha],
+    cwd,
+    60_000,
+  );
+  return parseNameStatus(out);
+}
+
+/**
+ * The one command TreeDeck runs that touches the network, and only when you press Fetch.
+ * `--prune` drops remote-tracking branches whose remote branch is gone, which is what makes
+ * the branch list match the remote again.
+ */
+export function fetchAll(cwd: string): Promise<string> {
+  return git(['fetch', '--all', '--prune'], cwd, 300_000);
 }

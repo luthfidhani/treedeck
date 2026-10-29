@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { registerBranchCommands } from './commands/branch';
 import { registerCompareCommands } from './commands/compare';
 import { registerManageCommands } from './commands/manage';
 import { registerOpenCommands } from './commands/open';
@@ -21,6 +22,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     ...registerOpenCommands(model),
     ...registerManageCommands(model),
     ...registerCompareCommands(model),
+    ...registerBranchCommands(model),
     createStatusBar(model),
     watchRepos(model),
   );
